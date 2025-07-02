@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import dynamic from 'next/dynamic';
+
+const KonvaCanvas = dynamic(() => import('./KonvaCanvas'), { ssr: false });
 import { useMutation, useQuery } from "convex/react";
-import { api } from "convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import Pin from "./Pin";
 
 interface PlanViewerProps {
@@ -78,7 +81,7 @@ const PlanViewer: React.FC<PlanViewerProps> = ({ projectId, onSelectPin }) => {
       >
         <CardContent className="p-0 text-center">
           {mainPlanUrl ? (
-            <img src={mainPlanUrl} alt="Main Floor Plan" className="max-w-full max-h-full object-contain" />
+            <KonvaCanvas projectId={projectId} mainPlanUrl={mainPlanUrl} />
           ) : (
             <>
               <p className="text-gray-500 mb-2">Upload Main Floor Plan</p>

@@ -339,3 +339,30 @@ export const listHistoryForEntity = query({
       .collect();
   },
 });
+
+export const addMarkup = mutation({
+  args: {
+    projectId: v.id("projects"),
+    type: v.string(),
+    data: v.any(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("markups", {
+      projectId: args.projectId,
+      type: args.type,
+      data: args.data,
+    });
+  },
+});
+
+export const listMarkups = query({
+  args: {
+    projectId: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("markups")
+      .filter((q) => q.eq(q.field("projectId"), args.projectId))
+      .collect();
+  },
+});

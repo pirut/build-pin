@@ -5,6 +5,18 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push("konva");
+    }
+    config.resolve.fallback = {
+      fs: false,
+      path: false,
+      crypto: false,
+    };
+    return config;
+  },
+};
 
 export default config;

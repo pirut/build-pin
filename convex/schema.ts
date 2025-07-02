@@ -45,9 +45,14 @@ export default defineSchema({
     category: v.string(), // e.g., "Issue", "Completed", "Question", "Approved"
   }),
   history: defineTable({
-    entityId: v.id("pins"), // Can be pin, subplan, or note ID
+    entityId: v.union(v.id("projects"), v.id("pdfs"), v.id("pins"), v.id("subplans"), v.id("tasks"), v.id("statuses"), v.id("notes"), v.id("markups")),
     entityType: v.union(v.literal("pin"), v.literal("subplan"), v.literal("note"), v.literal("task")),
     action: v.string(), // e.g., "created", "updated", "deleted", "status_changed", "pdf_added"
     details: v.any(), // Store a JSON object with change details
+  }),
+  markups: defineTable({
+    projectId: v.id("projects"),
+    type: v.string(), // e.g., "line", "rectangle"
+    data: v.any(), // Store Konva shape data
   }),
 });

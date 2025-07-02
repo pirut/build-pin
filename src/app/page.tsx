@@ -8,7 +8,7 @@ import PlanViewer from "./_components/PlanViewer";
 import PinDetailPanel from "./_components/PinDetailPanel";
 import ProjectCard from "./_components/ProjectCard";
 import { useQuery } from "convex/react";
-import { api } from "convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
