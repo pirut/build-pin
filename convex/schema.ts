@@ -32,6 +32,22 @@ export default defineSchema({
     pinId: v.id("pins"),
     title: v.string(),
     description: v.string(),
-    status: v.string(),
+    status: v.string(), // This will eventually reference a status ID
+  }),
+  statuses: defineTable({
+    name: v.string(),
+    color: v.string(),
+    type: v.union(v.literal("pin"), v.literal("task")),
+  }),
+  notes: defineTable({
+    pinId: v.id("pins"),
+    content: v.string(),
+    category: v.string(), // e.g., "Issue", "Completed", "Question", "Approved"
+  }),
+  history: defineTable({
+    entityId: v.id("pins"), // Can be pin, subplan, or note ID
+    entityType: v.union(v.literal("pin"), v.literal("subplan"), v.literal("note"), v.literal("task")),
+    action: v.string(), // e.g., "created", "updated", "deleted", "status_changed", "pdf_added"
+    details: v.any(), // Store a JSON object with change details
   }),
 });
