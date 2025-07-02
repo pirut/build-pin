@@ -4,42 +4,48 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Stage, Layer, Line, Rect } from 'react-konva';
-import Konva from 'konva';
+import type Konva from 'konva';
 import { Button } from "@/components/ui/button";
 
 type Tool = 'pen' | 'rectangle' | 'select';
 
+interface LineConfig {
+  points: number[];
+  stroke: string;
+  strokeWidth: number;
+}
+
+interface RectConfig {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  stroke: string;
+  strokeWidth: number;
+}
+
+interface Markup {
+  _id: string;
+  type: 'line' | 'rectangle';
+  data: LineConfig | RectConfig;
+}
+
 interface KonvaCanvasProps {
   projectId: string;
   mainPlanUrl: string | undefined;
+  pdfWidth: number;
+  pdfHeight: number;
 }
 
-const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, mainPlanUrl }) => {
+const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, pdfWidth, pdfHeight }) => {
   const addMarkup = useMutation(api.projects.addMarkup);
-  const markups = useQuery(api.projects.listMarkups, projectId ? { projectId } : "skip");
+  const markups = useQuery(api.projects.listMarkups, projectId ? { projectId } : "skip") as Markup[];
 
   const [tool, setTool] = useState<Tool>('pen');
-  const [lines, setLines] = useState<any[]>([]);
-  const [rectangles, setRectangles] = useState<any[]>([]);
+  const [lines, setLines] = useState<LineConfig[]>([]);
+  const [rectangles, setRectangles] = useState<RectConfig[]>([]);
   const isDrawing = useRef(false);
   const stageRef = useRef<Konva.Stage>(null);
-  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const updateStageSize = () => {
-      const container = document.getElementById('plan-viewer-container');
-      if (container) {
-        setStageSize({
-          width: container.offsetWidth,
-          height: container.offsetHeight,
-        });
-      }
-    };
-
-    updateStageSize();
-    window.addEventListener('resize', updateStageSize);
-    return () => window.removeEventListener('resize', updateStageSize);
-  }, [mainPlanUrl]);
 
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (tool === 'select') return;
@@ -48,9 +54,9 @@ const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, mainPlanUrl }) => 
     if (!pos) return;
 
     if (tool === 'pen') {
-      setLines([...lines, { points: [pos.x, pos.y], stroke: 'red', strokeWidth: 2 }]);
+      setLines([...lines, { points: [pos.x, pos.y], stroke: 'red', strokeWidth: 2 } as LineConfig]);
     } else if (tool === 'rectangle') {
-      setRectangles([...rectangles, { x: pos.x, y: pos.y, width: 0, height: 0, stroke: 'blue', strokeWidth: 2 }]);
+      setRectangles([...rectangles, { x: pos.x, y: pos.y, width: 0, height: 0, stroke: 'blue', strokeWidth: 2 } as RectConfig]);
     }
   };
 
@@ -62,19 +68,17 @@ const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, mainPlanUrl }) => 
     if (!point) return;
 
     if (tool === 'pen') {
-      let lastLine = lines[lines.length - 1];
+      const lastLine = lines[lines.length - 1];
       if (!lastLine) return;
       lastLine.points = lastLine.points.concat([point.x, point.y]);
-      lines.splice(lines.length - 1, 1, lastLine);
       setLines([...lines]);
     } else if (tool === 'rectangle') {
-      let lastRect = rectangles[rectangles.length - 1];
+      const lastRect = rectangles[rectangles.length - 1];
       if (!lastRect) return;
       const newWidth = point.x - lastRect.x;
       const newHeight = point.y - lastRect.y;
-      lastRect = { ...lastRect, width: newWidth, height: newHeight };
-      rectangles.splice(rectangles.length - 1, 1, lastRect);
-      setRectangles([...rectangles]);
+      const updatedRect = { ...lastRect, width: newWidth, height: newHeight };
+      setRectangles([...rectangles.slice(0, rectangles.length - 1), updatedRect]);
     }
   };
 
@@ -105,16 +109,15 @@ const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, mainPlanUrl }) => 
   }, [markups]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="absolute top-0 left-0 w-full h-full">
       <div className="absolute top-2 left-2 z-10 flex space-x-2">
         <Button onClick={() => setTool('select')} variant={tool === 'select' ? 'default' : 'outline'}>Select</Button>
         <Button onClick={() => setTool('pen')} variant={tool === 'pen' ? 'default' : 'outline'}>Pen</Button>
         <Button onClick={() => setTool('rectangle')} variant={tool === 'rectangle' ? 'default' : 'outline'}>Rectangle</Button>
       </div>
-      {mainPlanUrl && <img src={mainPlanUrl} alt="Main Floor Plan" className="max-w-full max-h-full object-contain absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
       <Stage
-        width={stageSize.width}
-        height={stageSize.height}
+        width={pdfWidth}
+        height={pdfHeight}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}

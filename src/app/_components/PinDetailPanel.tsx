@@ -1,19 +1,27 @@
 "use client";
 
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type Doc, type Id } from "../../../convex/_generated/dataModel";
 
 interface PinDetailPanelProps {
   pinId: string | null;
 }
 
 const PinDetailPanel: React.FC<PinDetailPanelProps> = ({ pinId }) => {
-  const pin = useQuery(api.projects.getPin, pinId ? { pinId } : "skip");
-  const subplans = useQuery(api.projects.listSubplansForPin, pinId ? { pinId } : "skip");
-  const tasks = useQuery(api.projects.listTasksForPin, pinId ? { pinId } : "skip");
-  const notes = useQuery(api.projects.listNotesForPin, pinId ? { pinId } : "skip");
-  const history = useQuery(api.projects.listHistoryForEntity, pinId ? { entityId: pinId } : "skip");
-  const pinStatuses = useQuery(api.projects.listStatuses, { type: "pin" });
-  const taskStatuses = useQuery(api.projects.listStatuses, { type: "task" });
+  const pin: Doc<"pins"> | undefined = useQuery(api.projects.getPin, pinId ? { pinId: pinId as Id<"pins"> } : "skip");
+  const subplans: Doc<"subplans">[] | undefined = useQuery(api.projects.listSubplansForPin, pinId ? { pinId: pinId as Id<"pins"> } : "skip");
+  const tasks: Doc<"tasks">[] | undefined = useQuery(api.projects.listTasksForPin, pinId ? { pinId: pinId as Id<"pins"> } : "skip");
+  const notes: Doc<"notes">[] | undefined = useQuery(api.projects.listNotesForPin, pinId ? { pinId: pinId as Id<"pins"> } : "skip");
+  const history: Doc<"history">[] | undefined = useQuery(api.projects.listHistoryForEntity, pinId ? { entityId: pinId as Id<"pins"> } : "skip");
+  const pinStatuses: Doc<"statuses">[] | undefined = useQuery(api.projects.listStatuses, { type: "pin" });
+  const taskStatuses: Doc<"statuses">[] | undefined = useQuery(api.projects.listStatuses, { type: "task" });
 
   const addPdfToPin = useMutation(api.projects.addPdfToPin);
   const createTask = useMutation(api.projects.createTask);
@@ -36,14 +44,14 @@ const PinDetailPanel: React.FC<PinDetailPanelProps> = ({ pinId }) => {
 
     const data = event.dataTransfer.getData("text/plain");
     try {
-      const { pdfId, fileName, thumbnailUrl } = JSON.parse(data);
+      const { pdfId, fileName, thumbnailUrl } = JSON.parse(data) as { pdfId: Id<"pdfs">; fileName: string; thumbnailUrl?: string; };
       await addPdfToPin({
-        pinId,
+        pinId: pinId as Id<"pins">,
         pdfId,
         fileName,
         thumbnailUrl,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to parse dropped data:", error);
     }
   };
@@ -103,7 +111,7 @@ const PinDetailPanel: React.FC<PinDetailPanelProps> = ({ pinId }) => {
         <p>X: {pin.x}, Y: {pin.y}</p>
         <div className="mb-4">
           <h3 className="text-md font-bold">Pin Status:</h3>
-          <Select onValueChange={handlePinStatusChange} value={pin.status || ""}>
+          <Select onValueChange={handlePinStatusChange} value={pin.status as string ?? ""}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -149,7 +157,7 @@ const PinDetailPanel: React.FC<PinDetailPanelProps> = ({ pinId }) => {
             <div key={task._id} className="mb-2 p-2 border rounded bg-white">
               <p className="font-medium">{task.title}</p>
               <p className="text-sm text-gray-600">{task.description}</p>
-              <Select onValueChange={(value) => handleTaskStatusChange(task._id, value)} value={task.status || ""}>
+              <Select onValueChange={(value) => handleTaskStatusChange(task._id, value)} value={task.status ?? ""}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>

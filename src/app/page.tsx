@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import NewProjectModal from "./_components/NewProjectModal";
-import PdfLibrary from "./_components/PdfLibrary";
-import PlanViewer from "./_components/PlanViewer";
-import PinDetailPanel from "./_components/PinDetailPanel";
+
 import ProjectCard from "./_components/ProjectCard";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";

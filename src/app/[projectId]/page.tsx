@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import PdfLibrary from "../_components/PdfLibrary";
 import PlanViewer from "../_components/PlanViewer";
 import PinDetailPanel from "../_components/PinDetailPanel";
-import StatusSettings from "../_components/StatusSettings";
+
 
 const ProjectWorkspace = () => {
   const params = useParams();
