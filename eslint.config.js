@@ -9,7 +9,7 @@ export default tseslint.config(
   {
     ignores: [".next"],
   },
-  ...compat.extends("next/core-web-vitals"),
+  
   {
     files: ["**/*.ts", "**/*.tsx"],
     extends: [
