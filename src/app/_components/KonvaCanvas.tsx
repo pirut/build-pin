@@ -24,14 +24,12 @@ interface RectConfig {
   strokeWidth: number;
 }
 
-interface Markup {
-  _id: string;
-  type: 'line' | 'rectangle';
-  data: LineConfig | RectConfig;
-}
+
+
+import { type Id } from "../../../convex/_generated/dataModel";
 
 interface KonvaCanvasProps {
-  projectId: string;
+  projectId: Id<"projects">;
   mainPlanUrl: string | undefined;
   pdfWidth: number;
   pdfHeight: number;
@@ -39,7 +37,7 @@ interface KonvaCanvasProps {
 
 const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, pdfWidth, pdfHeight }) => {
   const addMarkup = useMutation(api.projects.addMarkup);
-  const markups = useQuery(api.projects.listMarkups, projectId ? { projectId } : "skip") as Markup[];
+  const markups = useQuery(api.projects.listMarkups, projectId ? { projectId } : "skip") as { type: 'line' | 'rectangle', data: LineConfig | RectConfig }[] | undefined;
 
   const [tool, setTool] = useState<Tool>('pen');
   const [lines, setLines] = useState<LineConfig[]>([]);
@@ -101,8 +99,8 @@ const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, pdfWidth, pdfHeigh
 
   useEffect(() => {
     if (markups) {
-      const loadedLines = markups.filter(m => m.type === 'line').map(m => m.data);
-      const loadedRectangles = markups.filter(m => m.type === 'rectangle').map(m => m.data);
+      const loadedLines = markups.filter(m => m.type === 'line').map(m => m.data as LineConfig);
+      const loadedRectangles = markups.filter(m => m.type === 'rectangle').map(m => m.data as RectConfig);
       setLines(loadedLines);
       setRectangles(loadedRectangles);
     }

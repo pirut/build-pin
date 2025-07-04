@@ -86,10 +86,19 @@ export const listPdfsInLibrary = query({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const pdfs = await ctx.db
       .query("pdfs")
       .filter((q) => q.eq(q.field("projectId"), args.projectId))
       .collect();
+
+    const pdfsWithUrls = await Promise.all(
+      pdfs.map(async (pdf) => {
+        const url = await ctx.storage.getUrl(pdf.storageId);
+        return { ...pdf, url };
+      })
+    );
+
+    return pdfsWithUrls;
   },
 });
 

@@ -2,12 +2,10 @@ import React from 'react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
-
-import { Document, Page } from 'react-pdf';
-import { pdfjs } from 'react-pdf';
 import { type Id } from "../../../convex/_generated/dataModel";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+import PdfDocument from './PdfDocument';
+
 
 
 
@@ -22,6 +20,7 @@ interface PdfDocument {
   storageId: Id<"_storage">;
   fileName: string;
   thumbnailUrl?: string;
+  url?: string | null;
 }
 
 const PdfLibrary: React.FC<PdfLibraryProps> = ({ projectId }) => {
@@ -54,6 +53,7 @@ const PdfLibrary: React.FC<PdfLibraryProps> = ({ projectId }) => {
       pdfId: pdf._id,
       fileName: pdf.fileName,
       thumbnailUrl: pdf.thumbnailUrl,
+      url: pdf.url,
     }));
   };
 
@@ -67,23 +67,10 @@ const PdfLibrary: React.FC<PdfLibraryProps> = ({ projectId }) => {
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 gap-4">
+        {pdfs === undefined && <p>Loading libraries...</p>}
+        {pdfs?.length === 0 && <p>No PDFs in library.</p>}
         {pdfs?.map((pdf: PdfDocument) => (
-          <Card
-            key={pdf._id}
-            className="cursor-grab"
-            draggable
-            onDragStart={(e) => handleDragStart(e, pdf)}
-          >
-            <CardContent className="p-2">
-              <Document
-                file={pdf.storageId ? `https://convex.cloud/api/storage/${pdf.storageId}` : undefined}
-                onLoadError={console.error}
-              >
-                <Page pageNumber={1} width={100} renderAnnotationLayer={false} renderTextLayer={false} />
-              </Document>
-              <p className="text-xs mt-1 truncate">{pdf.fileName}</p>
-            </CardContent>
-          </Card>
+          <PdfDocument key={pdf._id} pdf={pdf} onDragStart={handleDragStart} />
         ))}
       </div>
     </div>

@@ -21,6 +21,7 @@ export default defineSchema({
     associatedPdfId: v.id("pdfs"),
     associatedPdfFileName: v.string(),
     associatedPdfThumbnailUrl: v.optional(v.string()),
+    status: v.optional(v.id("statuses")),
   }),
   subplans: defineTable({
     pinId: v.id("pins"),
@@ -46,7 +47,7 @@ export default defineSchema({
   }),
   history: defineTable({
     entityId: v.union(v.id("projects"), v.id("pdfs"), v.id("pins"), v.id("subplans"), v.id("tasks"), v.id("statuses"), v.id("notes"), v.id("markups")),
-    entityType: v.union(v.literal("project"), v.literal("pin"), v.literal("subplan"), v.literal("note"), v.literal("task")),
+    entityType: v.union(v.literal("project"), v.literal("pin"), v.literal("subplan"), v.literal("note"), v.literal("task"), v.literal("pdf")),
     action: v.string(), // e.g., "created", "updated", "deleted", "status_changed", "pdf_added"
     details: v.any(), // Store a JSON object with change details
   }),

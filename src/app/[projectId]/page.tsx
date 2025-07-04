@@ -4,15 +4,18 @@ import React, { useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useParams } from 'next/navigation';
-import PdfLibrary from "../_components/PdfLibrary";
-import PlanViewer from "../_components/PlanViewer";
+import { Id } from "../../../convex/_generated/dataModel";
+import dynamic from 'next/dynamic';
+
+const PdfLibrary = dynamic(() => import('../_components/PdfLibrary'), { ssr: false });
+const PlanViewer = dynamic(() => import('../_components/PlanViewer'), { ssr: false });
 import PinDetailPanel from "../_components/PinDetailPanel";
 
 
 const ProjectWorkspace = () => {
   const params = useParams();
-  const projectId = params.projectId as string;
-  const project = useQuery(api.projects.getProject, { projectId });
+  const projectId = params.projectId as Id<"projects">;
+  const project = useQuery(api.projects.getProject, projectId ? { projectId: projectId as Id<"projects"> } : "skip");
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
 
   if (!projectId || !project) {
@@ -41,7 +44,7 @@ const ProjectWorkspace = () => {
         </div>
 
         {/* Center Panel */}
-        <PlanViewer projectId={projectId} onSelectPin={setSelectedPinId} />
+        <PlanViewer project={project} onSelectPin={setSelectedPinId} />
 
         {/* Right Sidebar */}
         {selectedPinId && <PinDetailPanel pinId={selectedPinId} />}
