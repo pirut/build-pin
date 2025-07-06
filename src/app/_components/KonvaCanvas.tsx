@@ -107,7 +107,7 @@ const KonvaCanvas: React.FC<KonvaCanvasProps> = ({ projectId, pdfWidth, pdfHeigh
   }, [markups]);
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full">
+    <div className="w-full h-full">
       <div className="absolute top-2 left-2 z-10 flex space-x-2">
         <Button onClick={() => setTool('select')} variant={tool === 'select' ? 'default' : 'outline'}>Select</Button>
         <Button onClick={() => setTool('pen')} variant={tool === 'pen' ? 'default' : 'outline'}>Pen</Button>

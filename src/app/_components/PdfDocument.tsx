@@ -13,18 +13,38 @@ interface PdfDocumentProps {
 }
 
 const PdfDocument: React.FC<PdfDocumentProps> = ({ pdf, onDragStart }) => {
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<string | null>(null);
 
   useEffect(() => {
+    let objectUrl: string | null = null;
+
     if (pdf.url) {
+      console.log(`Fetching PDF: ${pdf.fileName} from ${pdf.url}`);
       const fetchPdf = async () => {
-        const response = await fetch(pdf.url!);
-        const blob = await response.blob();
-        setPdfFile(new File([blob], pdf.fileName));
+        try {
+          const response = await fetch(pdf.url!);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+          }
+          const blob = await response.blob();
+          console.log(`Successfully fetched blob for ${pdf.fileName}, size: ${blob.size}`);
+          objectUrl = URL.createObjectURL(blob);
+          setPdfFile(objectUrl);
+        } catch (error) {
+          console.error(`Error fetching PDF ${pdf.fileName}:`, error);
+        }
       };
       fetchPdf();
+    } else {
+      console.warn(`PDF object for ${pdf.fileName} is missing a URL.`);
     }
-  }, [pdf.url, pdf.fileName]);
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [pdf.url]);
 
   return (
     <Card

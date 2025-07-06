@@ -3,9 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import dynamic from 'next/dynamic';
-import { Document, Page, pdfjs } from 'react-pdf';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+import { Document, Page } from 'react-pdf';
 
 const KonvaCanvas = dynamic(() => import('./KonvaCanvas'), { ssr: false });
 import { useMutation, useQuery } from "convex/react";
@@ -25,24 +23,56 @@ const PlanViewer: React.FC<PlanViewerProps> = ({ project, onSelectPin }) => {
   const pins = useQuery(api.projects.listPins, project?._id ? { projectId: project._id } : "skip");
 
   
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<string | null>(null);
   const [pdfScale, setPdfScale] = useState<number>(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerDims, setContainerDims] = useState({ width: 0, height: 0 });
 
-  const onDocumentLoadSuccess = ({ numPages: _numPages }: { numPages: number }) => {
-    // setPageNumber(1);
+  const onDocumentLoadSuccess = async (pdf: any) => {
+    if (pdfFile && containerRef.current) {
+      const page = await pdf.getPage(1);
+
+      const { offsetWidth, offsetHeight } = containerRef.current;
+      const scaleX = offsetWidth / page.view[2]; // page.view[2] is width
+      const scaleY = offsetHeight / page.view[3]; // page.view[3] is height
+
+      setPdfScale(Math.min(scaleX, scaleY));
+      setContainerDims({ width: page.view[2] * Math.min(scaleX, scaleY), height: page.view[3] * Math.min(scaleX, scaleY) });
+    }
   };
 
+  
+
+  
+
   useEffect(() => {
+    let objectUrl: string | null = null;
     if (mainPlanUrl) {
+      console.log(`Fetching main plan from: ${mainPlanUrl}`);
       const fetchPdf = async () => {
-        const response = await fetch(mainPlanUrl);
-        const blob = await response.blob();
-        setPdfFile(new File([blob], "main-plan.pdf"));
+        try {
+          const response = await fetch(mainPlanUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch main plan: ${response.statusText}`);
+          }
+          const blob = await response.blob();
+          console.log(`Successfully fetched blob for main plan, size: ${blob.size}`);
+          objectUrl = URL.createObjectURL(blob);
+          setPdfFile(objectUrl);
+        } catch (error) {
+          console.error("Error fetching main plan:", error);
+        }
       };
       fetchPdf();
+    } else {
+      console.log("Main plan URL is not yet available.");
     }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [mainPlanUrl]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,8 +105,14 @@ const PlanViewer: React.FC<PlanViewerProps> = ({ project, onSelectPin }) => {
     try {
       const { pdfId, fileName, thumbnailUrl } = JSON.parse(data) as { pdfId: string; fileName: string; thumbnailUrl?: string; };
       const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      const offsetX = (rect.width - containerDims.width) / 2;
+      const offsetY = (rect.height - containerDims.height) / 2;
+
+      const clientX = event.clientX - rect.left;
+      const clientY = event.clientY - rect.top;
+
+      const x = (clientX - offsetX) / pdfScale;
+      const y = (clientY - offsetY) / pdfScale;
 
       await createPin({
         projectId: project._id,
@@ -108,27 +144,26 @@ const PlanViewer: React.FC<PlanViewerProps> = ({ project, onSelectPin }) => {
       >
         <CardContent className="p-0 text-center w-full h-full flex items-center justify-center">
           {pdfFile ? (
-            <>
+            <div
+              style={{
+                position: 'absolute',
+                width: containerDims.width,
+                height: containerDims.height,
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
               <Document
                 file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={console.error}
-                className="w-full h-full flex justify-center items-center"
               >
                 <Page
                   pageNumber={1}
                   scale={pdfScale}
                   renderAnnotationLayer={false}
                   renderTextLayer={false}
-                  onLoadSuccess={(page) => {
-                    if (containerRef.current) {
-                      const { offsetWidth, offsetHeight } = containerRef.current;
-                      const scaleX = offsetWidth / page.width;
-                      const scaleY = offsetHeight / page.height;
-                      setPdfScale(Math.min(scaleX, scaleY));
-                      setContainerDims({ width: page.width * Math.min(scaleX, scaleY), height: page.height * Math.min(scaleX, scaleY) });
-                    }
-                  }}
                 />
               </Document>
               <KonvaCanvas
@@ -137,7 +172,7 @@ const PlanViewer: React.FC<PlanViewerProps> = ({ project, onSelectPin }) => {
                 pdfWidth={containerDims.width}
                 pdfHeight={containerDims.height}
               />
-            </>
+            </div>
           ) : mainPlanUrl ? (
             <p>Loading PDF...</p>
           ) : (
